@@ -1,0 +1,602 @@
+[
+  {
+    "id": "nvidia-drm-modeset",
+    "name": "nvidia-drm.modeset=1",
+    "category": "Graphics Subsystem",
+    "relevance": { "hybrid": 95, "dgpu": 100 },
+    "switches": "=1 (Enabled), =0 (Disabled)",
+    "verboseDescription": "This parameter is absolutely mandatory for modern NVIDIA Wayland compositing, specifically under KDE Plasma on Fedora 43 Rawhide. By setting this to 1, you instruct the kernel to allow the NVIDIA proprietary driver to hook directly into the Direct Rendering Manager (DRM) subsystem. In a dGPU-only state, this ensures screen tearing is eliminated and display synchronization is handled natively by the NVIDIA hardware. In a Hybrid state, it acts as the necessary bridge for PRIME offloading, allowing the integrated Intel graphics to pass frames rendered by the NVIDIA GPU directly to your ASUS F16's display panel."
+  },
+  {
+    "id": "intel-iommu",
+    "name": "intel_iommu=on iommu=pt",
+    "category": "Memory & Hardware Isolation",
+    "relevance": { "hybrid": 90, "dgpu": 85 },
+    "switches": "intel_iommu=on/off/igfx_off, iommu=pt/force",
+    "verboseDescription": "Crucial for optimizing your newly installed 16 GB DDR5 memory (2x8GB configuration) on the ASUS FX607V architecture. 'intel_iommu=on' activates the Input-Output Memory Management Unit, a hardware feature vital for secure memory isolation and virtualization. The addition of 'iommu=pt' (passthrough) is the optimization catalyst: it prevents the kernel from unnecessarily translating DMA (Direct Memory Access) requests for devices that already have trusted drivers. This significantly reduces CPU overhead when the discrete GPU communicates with the DDR5 memory, smoothing out micro-stutters during high-throughput gaming or compilation tasks."
+  },
+  {
+    "id": "acpi-osi",
+    "name": "acpi_osi=Linux",
+    "category": "ASUS Firmware/ACPI",
+    "relevance": { "hybrid": 85, "dgpu": 85 },
+    "switches": "acpi_osi=Linux, acpi_osi=\"!Windows 2020\"",
+    "verboseDescription": "An aggressive workaround designed to interface with the ASUS BIOS v340. Laptop manufacturers often hardcode Advanced Configuration and Power Interface (ACPI) tables to expect a Windows environment. By forcing 'acpi_osi=Linux', you are commanding the kernel to present itself strictly as a Linux environment to the firmware. Alternatively, spoofing a Windows version (e.g., '!Windows 2015') can trick the ASUS Embedded Controller into unlocking hardware fn-keys, keyboard backlighting, and precise thermal fan curves that are otherwise hidden. Highly volatile; monitor system logs if ACPI errors spike."
+  },
+  {
+    "id": "nouveau-blacklist",
+    "name": "rd.driver.blacklist=nouveau modprobe.blacklist=nouveau",
+    "category": "Graphics Subsystem",
+    "relevance": { "hybrid": 80, "dgpu": 100 },
+    "switches": "blacklist=module_name",
+    "verboseDescription": "The absolute eradication of the open-source 'nouveau' driver from the boot sequence. When forcing the system into a dGPU-only architecture, any accidental loading of nouveau by the initial ramdisk (dracut) will cause a catastrophic race condition with the proprietary NVIDIA drivers, resulting in kernel panics or a black screen. By passing this parameter at the earliest stage of the bootloader, you chemically isolate the environment, ensuring only the official 'nvidia', 'nvidia_modeset', and 'nvidia_uvm' modules are synthesized into the kernel space."
+  },
+  {
+    "id": "rhgb-quiet",
+    "name": "rhgb quiet (REMOVE)",
+    "category": "Diagnostics & Verbosity",
+    "relevance": { "hybrid": 70, "dgpu": 75 },
+    "switches": "N/A (Positional Removal)",
+    "verboseDescription": "While technically standard on Fedora, removing 'rhgb' (Red Hat Graphical Boot) and 'quiet' is strongly advised for a development release like Fedora 43 Rawhide. Leaving them in masks critical kernel initialization logs. Removing them exposes the raw standard output of the kernel as it probes your Intel/NVIDIA hybrid architecture and initializes your 16GB of DDR5. If the ASUS v340 BIOS causes a hang during PCIe enumeration of the dGPU, seeing the raw diagnostic output is the only way to debug the lockup."
+  },
+  {
+    "id": "pcie-aspm",
+    "name": "pcie_aspm=off",
+    "category": "Power & PCIe Bus",
+    "relevance": { "hybrid": 30, "dgpu": 95 },
+    "switches": "=off, =force, =default",
+    "verboseDescription": "Active State Power Management (ASPM) controls power consumption on the PCI Express links. In a Hybrid configuration, ASPM is vital to allow the NVIDIA GPU to reach an RTD3 (Runtime D3) sleep state, saving battery. However, when you toggle to a strict dGPU environment for maximum performance, setting 'pcie_aspm=off' violently disables these power-saving states. This forces the PCIe lanes connecting your CPU and the NVIDIA GPU to remain fully saturated and awake at all times, preventing any latency introduced by the hardware waking up from a low-power state."
+  },
+  {
+    "id": "i915-guc",
+    "name": "i915.enable_guc=3",
+    "category": "Graphics Subsystem",
+    "relevance": { "hybrid": 100, "dgpu": 10 },
+    "switches": "=0 (Off), =1 (Default), =2 (HuC), =3 (GuC+HuC)",
+    "verboseDescription": "A highly specialized Intel Graphics (i915) parameter. In Hybrid mode, your Intel integrated GPU handles the primary display pipeline. Setting this to 3 enables both the GuC (Graphics microController) for advanced workload scheduling and the HuC (HEVC microController) for hardware-accelerated video decoding. This significantly offloads processing from the CPU to the iGPU, preserving your 16GB DDR5 bandwidth for the NVIDIA dGPU when PRIME offloading is triggered."
+  },
+  {
+    "id": "zswap",
+    "name": "zswap.enabled=1 zswap.max_pool_percent=15",
+    "category": "Memory & Hardware Isolation",
+    "relevance": { "hybrid": 75, "dgpu": 75 },
+    "switches": "enabled=0/1, max_pool_percent=[integer]",
+    "verboseDescription": "With your ASUS FX607V upgraded to 16 GB of dual-channel DDR5, swap thrashing to the NVMe drive can still occur during extreme compilation or massive KDE Plasma memory leaks in Fedora Rawhide. Zswap acts as a compressed RAM cache for swap pages. By enabling it and restricting it to 15% of your 16GB total memory footprint (roughly 2.4 GB), the kernel intercepts memory pages headed for the SSD, compresses them (often with zstd), and stores them in RAM. This vastly increases IO performance and extends the lifespan of your laptop's NVMe drive."
+  },
+  {
+    "id": "asus-wmi",
+    "name": "asus_wmi.fnlock_default=1",
+    "category": "ASUS Firmware/ACPI",
+    "relevance": { "hybrid": 60, "dgpu": 60 },
+    "switches": "=0, =1",
+    "verboseDescription": "A highly specific quality-of-life module parameter for the 'asus_wmi' kernel driver. ASUS TUF laptops often have ambiguous default states for their Function (Fn) key rows. This parameter instructs the Windows Management Instrumentation (WMI) ACPI bridge to default the Fn keys to their media/control functions rather than standard F1-F12 keys upon boot. This bypasses the need to rely on userspace tools (like asusctl) to set the hardware flag after the graphical session has already initialized."
+  },
+  {
+    "id": "selinux",
+    "name": "enforcing=0",
+    "category": "Diagnostics & Verbosity",
+    "relevance": { "hybrid": 50, "dgpu": 50 },
+    "switches": "enforcing=0 (Permissive), selinux=0 (Disabled)",
+    "verboseDescription": "Running Fedora 43 Rawhide introduces experimental packages where SELinux policies often fall behind development. 'enforcing=0' drops SELinux into Permissive mode. It will not actively block kernel module loads or systemd services (which is critical when testing bleeding-edge NVIDIA drivers or experimental ASUS WMI modules), but it will still log the AVC denials. This is a critical diagnostic chemical for a developer environment, preventing silent boot failures caused by mandatory access control."
+  },
+  {
+    "id": "nvidia-drm-fbdev",
+    "name": "nvidia-drm.fbdev=1",
+    "category": "Graphics Subsystem",
+    "relevance": { "hybrid": 85, "dgpu": 100 },
+    "switches": "=1 (Enabled), =0 (Disabled)",
+    "verboseDescription": "An absolutely vital chemical additive for modern NVIDIA proprietary drivers (version 550+) operating within the volatile environment of Fedora 43 KDE Wayland. This parameter forcefully synthesizes a high-resolution frame buffer device backed by the NVIDIA GPU. When operating in dGPU override mode, this ensures the TTY virtual consoles (Ctrl+Alt+F3) render at your ASUS F16's native resolution rather than defaulting to a catastrophic blank screen or corrupted VGA text mode, enabling critical emergency terminal access."
+  },
+  {
+    "id": "ibt-off",
+    "name": "ibt=off",
+    "category": "Processor & Security",
+    "relevance": { "hybrid": 80, "dgpu": 95 },
+    "switches": "ibt=off, ibt=on",
+    "verboseDescription": "Indirect Branch Tracking (IBT) is a hardware-level security mitigation native to newer Intel processors present in the ASUS FX607V. However, the proprietary NVIDIA driver modules injected into the Rawhide kernel frequently fail to chemically bind with IBT enforced, resulting in a fatal 'module verification failed' panic during dracut initialization. Disabling IBT neutralizes this conflict, trading a highly specific vector of buffer overflow protection for absolute graphical driver stability in a development environment."
+  },
+  {
+    "id": "i915-psr",
+    "name": "i915.enable_psr=0",
+    "category": "Graphics Subsystem",
+    "relevance": { "hybrid": 100, "dgpu": 5 },
+    "switches": "=0 (Disabled), =1 (Enabled)",
+    "verboseDescription": "Panel Self Refresh (PSR) is a power-saving state for the Intel iGPU that instructs the display panel to hold a static frame without the GPU constantly feeding it. On the ASUS TUF series running KDE Plasma under Wayland, the synchronization between PSR and the rapid compositor updates often results in aggressive micro-flickering or partial screen tearing. Disabling this via '=0' forces a constant chemical burn of display updates, sacrificing a marginal amount of battery life for absolute visual fidelity in Hybrid mode."
+  },
+  {
+    "id": "intel-pstate",
+    "name": "intel_pstate=active",
+    "category": "Processor & Scheduling",
+    "relevance": { "hybrid": 75, "dgpu": 85 },
+    "switches": "=active, =passive, =disable",
+    "verboseDescription": "Commanders the Intel performance scaling architecture. By forcing the p-state driver into 'active' mode, you bypass standard ACPI CPUfreq scaling and allow the Intel Core processor's internal hardware to autonomously manage frequency stepping. This is crucial for feeding the NVIDIA dGPU; the CPU can aggressively spike its clock speeds to handle heavy draw-call bursts from the GPU, significantly reducing latency and frame drops during intense KDE desktop compositing or 3D rendering workloads."
+  },
+  {
+    "id": "mem-sleep-deep",
+    "name": "mem_sleep_default=deep",
+    "category": "Power & ACPI",
+    "relevance": { "hybrid": 90, "dgpu": 60 },
+    "switches": "=s2idle (Modern Standby), =deep (S3)",
+    "verboseDescription": "Modern ASUS BIOS architectures (like v340) heavily push 's2idle' (Modern Standby), which often behaves catastrophically under Linux, causing the laptop to chemically bake in a backpack while the fans continue to spin. Injecting 'deep' forcefully reverts the sleep mechanism to the traditional ACPI S3 sleep state (suspend-to-RAM). This ensures your 16GB of DDR5 is kept alive with minimal voltage while all other subsystems are completely powered off, ensuring maximum battery retention."
+  },
+  {
+    "id": "mitigations-off",
+    "name": "mitigations=off",
+    "category": "Processor & Security",
+    "relevance": { "hybrid": 80, "dgpu": 80 },
+    "switches": "=off, =auto, =auto,nosmt",
+    "verboseDescription": "The ultimate raw performance catalyst. This parameter dynamically disables all CPU speculative execution vulnerability mitigations (such as Retbleed, Spectre, Meltdown, and MDS). While doing so exposes the system to highly complex side-channel attacks, it frees up up to 15% of the CPU's processing overhead. In an isolated development or gaming environment where malicious code execution is tightly controlled, this provides a massive, measurable boost to compilation speeds and frame generation."
+  },
+  {
+    "id": "nvme-power-latency",
+    "name": "nvme_core.default_ps_max_latency_us=0",
+    "category": "Storage Subsystem",
+    "relevance": { "hybrid": 40, "dgpu": 90 },
+    "switches": "=0 (Disable Power States), =[integer]",
+    "verboseDescription": "ASUS TUF laptops typically utilize high-speed PCIe Gen4 NVMe drives that feature aggressive Autonomous Power State Transitions (APST). On Fedora Rawhide, entering these deep sleep states can cause a micro-second lockup that completely freezes the root filesystem. Setting the max latency to 0 violently disables APST. While it slightly increases the thermal output of the SSD, it guarantees zero-latency chemical transmission of data from the storage drive directly to your 16GB DDR5 memory pool."
+  },
+  {
+    "id": "split-lock-detect",
+    "name": "split_lock_detect=off",
+    "category": "Processor & Scheduling",
+    "relevance": { "hybrid": 60, "dgpu": 85 },
+    "switches": "=off, =warn, =fatal",
+    "verboseDescription": "Modern Intel processors hardware-trap 'split locks'—atomic operations that cross cache line boundaries—and the Linux kernel heavily penalizes tasks that trigger them to prevent bus lockups. Unfortunately, many older Windows games run via Proton/Wine and specific development emulators trigger split locks constantly. Disabling the detection entirely prevents the kernel from chemically throttling these processes, ensuring smooth performance at the cost of potential localized bus contention."
+  },
+  {
+    "id": "usb-autosuspend",
+    "name": "usbcore.autosuspend=-1",
+    "category": "Peripheral & I/O",
+    "relevance": { "hybrid": 70, "dgpu": 70 },
+    "switches": "=-1 (Disabled), =2 (Default seconds)",
+    "verboseDescription": "An essential stabilizer for high-polling rate gaming mice and external keyboards. The Linux kernel aggressively suspends USB devices to save power. On the ASUS FX607V, waking the USB root hub from suspension can introduce a highly noticeable 50-100ms chemical latency before the peripheral responds. Injecting '-1' globally eradicates USB selective suspend, ensuring maximum voltage is perpetually supplied to all I/O ports for instantaneous peripheral responsiveness."
+  },
+  {
+    "id": "thp-madvise",
+    "name": "transparent_hugepage=madvise",
+    "category": "Memory & Hardware Isolation",
+    "relevance": { "hybrid": 85, "dgpu": 85 },
+    "switches": "=always, =madvise, =never",
+    "verboseDescription": "A surgical optimization for your precise 16GB DDR5 configuration. 'always' aggressively attempts to group standard 4KB memory pages into 2MB hugepages, which can cause severe memory fragmentation and high CPU usage during compaction. 'madvise' relies on the applications themselves (like KDE Plasma or the JVM) to chemically request hugepages only when explicitly beneficial. This strikes a perfect equilibrium, maximizing DDR5 bandwidth efficiency while preventing unnecessary system-wide fragmentation lockups."
+  },
+  {
+    "id": "nmi-watchdog",
+    "name": "nmi_watchdog=0",
+    "category": "Diagnostics & Verbosity",
+    "relevance": { "hybrid": 75, "dgpu": 50 },
+    "switches": "=0 (Disabled), =1 (Enabled)",
+    "verboseDescription": "The Non-Maskable Interrupt (NMI) watchdog continually monitors the CPU for hard lockups by generating periodic chemical interrupts. In a stable laptop environment, these constant interrupts prevent the CPU from reaching its deepest C-states, passively draining battery and inducing micro-wakeups. Disabling it neutralizes these hardware interrupts, allowing your Intel CPU to sleep deeper and conserving power, under the assumption that Fedora 43 will not experience absolute kernel deadlocks."
+  },
+  {
+    "id": "sig-enforce",
+    "name": "module.sig_enforce=0",
+    "category": "System Core & Security",
+    "relevance": { "hybrid": 60, "dgpu": 60 },
+    "switches": "=0 (Disabled), =1 (Enabled)",
+    "verboseDescription": "Fedora Rawhide utilizes strict kernel module signing. When compiling experimental out-of-tree drivers—such as modified 'asus_wmi' modules or custom NVIDIA driver patches—the kernel will violently reject them if they lack cryptographic signatures. Setting this parameter to 0 bypasses the chemical verification matrix entirely. The kernel will taint itself (logging a warning) but will unconditionally load any compiled module, allowing unrestricted hardware development and testing."
+  },
+  {
+    "id": "i8042-nopnp",
+    "name": "i8042.nopnp i8042.reset",
+    "category": "ASUS Firmware/ACPI",
+    "relevance": { "hybrid": 65, "dgpu": 65 },
+    "switches": "nopnp, reset, nomux, noloop",
+    "verboseDescription": "A deeply embedded chemical fix for the archaic PS/2 interface that modern laptops still use to route integrated keyboards and touchpads. The ASUS BIOS v340 sometimes misreports the status of these devices via Plug and Play (PNP). Passing 'nopnp' forces the kernel to bypass ACPI probing and query the controller directly, while 'reset' forces a hardware initialization of the controller. This acts as a supreme fail-safe against the F16's integrated keyboard failing to respond during early boot sequences."
+  },
+  {
+    "id": "max-cstate",
+    "name": "processor.max_cstate=4",
+    "category": "Power & PCIe Bus",
+    "relevance": { "hybrid": 40, "dgpu": 85 },
+    "switches": "=0, =1, =4, =5",
+    "verboseDescription": "A specialized parameter that restricts the deepest power-saving states (C-states) the Intel processor can enter. When operating under extreme loads with the NVIDIA dGPU fully saturated, allowing the CPU to drop into C8 or C10 sleep states between instruction cycles can result in chemical voltage droop, crashing the system under heavy transient loads. Restricting it to C4 ensures the CPU remains partially energized, increasing stability during aggressive workload switching at the cost of higher idle thermal output."
+  },
+  {
+    "id": "page-alloc-shuffle",
+    "name": "page_alloc.shuffle=1",
+    "category": "Memory & Hardware Isolation",
+    "relevance": { "hybrid": 80, "dgpu": 80 },
+    "switches": "=0 (Disabled), =1 (Enabled)",
+    "verboseDescription": "A brilliant, obscure optimization explicitly beneficial for your dual-channel 16GB DDR5 memory arrays. Standard Linux memory allocation is sequential, which can chemically wear out specific memory banks faster and allows predictable memory patterns for side-channel attacks. Setting this to 1 introduces a randomized shuffling of the Free Page list. This acts as a thermodynamic wear-leveling mechanism for your DDR5 modules, distributing electrical load evenly across the 4 4GB DIMM cores and simultaneously increasing system security."
+  },
+  {
+    "id": "nvidia-preserve-vram",
+    "name": "nvidia.NVreg_PreserveVideoMemoryAllocations=1",
+    "category": "Graphics Subsystem",
+    "relevance": { "hybrid": 90, "dgpu": 100 },
+    "switches": "=1 (Enabled), =0 (Disabled)",
+    "verboseDescription": "A chemically mandatory parameter for surviving Wayland sleep/wake cycles on Fedora 43 Rawhide. Without this, the proprietary NVIDIA driver will forcefully purge its VRAM buffer during an ACPI S3 sleep event, causing KDE Plasma to chemically decompose into visual corruption upon wake. Injecting this parameter forces the kernel to meticulously serialize the entire VRAM payload into your 16GB DDR5 matrix or NVMe swap space, preserving the graphical topology flawlessly."
+  },
+  {
+    "id": "nvidia-dynamic-pm",
+    "name": "nvidia.NVreg_DynamicPowerManagement=0x02",
+    "category": "Power & PCIe Bus",
+    "relevance": { "hybrid": 100, "dgpu": 20 },
+    "switches": "=0x00 (Off), =0x01 (Coarse), =0x02 (Fine)",
+    "verboseDescription": "The absolute zenith of hybrid power synthesis. Setting this hexadecimal value to 0x02 engages 'Fine-grained' dynamic power management for the Turing/Ampere/Ada architectures. It instructs the PCI bus to physically sever the voltage rails to the NVIDIA dGPU when PRIME offloading is inactive, chemically dropping the discrete card's power draw to absolute zero (D3cold state) while the Intel iGPU handles the desktop matrix."
+  },
+  {
+    "id": "i915-fastboot",
+    "name": "i915.fastboot=1",
+    "category": "Graphics Subsystem",
+    "relevance": { "hybrid": 95, "dgpu": 10 },
+    "switches": "=1 (Enabled), =0 (Disabled)",
+    "verboseDescription": "A radical optimization for the Intel Graphics (i915) Direct Rendering Manager. Normally, the kernel will physically reset the display panel's chemical alignment during the handover from the ASUS BIOS UEFI frame buffer. Injecting 'fastboot=1' instructs the kernel to trust the v340 BIOS's initial resolution matrix, chemically fusing the bootloader screen directly into the Plymouth graphical boot, eliminating the destructive screen flicker."
+  },
+  {
+    "id": "acpi-backlight-native",
+    "name": "acpi_backlight=native",
+    "category": "ASUS Firmware/ACPI",
+    "relevance": { "hybrid": 85, "dgpu": 85 },
+    "switches": "=native, =vendor, =video, =none",
+    "verboseDescription": "ASUS laptop panels often suffer from severe chemical desynchronization between the ACPI video specification and the actual hardware Pulse-Width Modulation (PWM) controller. Forcing 'native' actively chemically bypasses the ASUS WMI interface for backlight requests and routes brightness control directly through the native Intel or NVIDIA DRM drivers, ensuring smooth, hardware-level backlight stepping without ACPI lockups."
+  },
+  {
+    "id": "acpi-enforce-resources",
+    "name": "acpi_enforce_resources=lax",
+    "category": "Diagnostics & Verbosity",
+    "relevance": { "hybrid": 70, "dgpu": 70 },
+    "switches": "=strict, =lax, =no",
+    "verboseDescription": "A highly volatile diagnostic parameter. By default, the kernel chemically isolates certain ACPI memory regions to prevent userspace tools from colliding with firmware operations. Setting this to 'lax' violently tears down this barrier. While dangerous, it is often the only way to allow tools like 'lm_sensors' or 'asusctl' to penetrate the ASUS BIOS v340 matrix and extract raw thermal diode readouts and fan RPMs directly from the Embedded Controller."
+  },
+  {
+    "id": "tsc-reliable",
+    "name": "tsc=reliable",
+    "category": "Processor & Scheduling",
+    "relevance": { "hybrid": 80, "dgpu": 90 },
+    "switches": "=reliable (Forces trust in TSC)",
+    "verboseDescription": "The Time Stamp Counter (TSC) is a CPU register that measures exact processor cycles. In heavily threaded environments or during high-frequency DDR5 polling, the kernel may chemically distrust the TSC and fall back to slower hardware timers (like HPET). Injecting 'reliable' forcefully hardcodes the kernel's trust in the Intel CPU's internal clock synchronization, drastically reducing timing latency during high-fps gaming workloads."
+  },
+  {
+    "id": "clocksource-tsc",
+    "name": "clocksource=tsc",
+    "category": "Processor & Scheduling",
+    "relevance": { "hybrid": 80, "dgpu": 90 },
+    "switches": "=tsc, =hpet, =acpi_pm",
+    "verboseDescription": "Operating in tandem with 'tsc=reliable', this chemically forces the kernel to utilize the Time Stamp Counter as the absolute master clock source for the entire operating system matrix. Bypassing the High Precision Event Timer (HPET) completely removes the latency associated with querying an external motherboard chip, ensuring microsecond-perfect thread scheduling across the CPU and NVIDIA dGPU."
+  },
+  {
+    "id": "rcu-nocbs",
+    "name": "rcu_nocbs=all",
+    "category": "Processor & Scheduling",
+    "relevance": { "hybrid": 60, "dgpu": 85 },
+    "switches": "=all, =[core list e.g., 0-15]",
+    "verboseDescription": "Read-Copy-Update (RCU) is a synchronization mechanism in the Linux kernel. Normally, RCU callbacks induce micro-interrupts on all CPU cores. By offloading these callbacks entirely ('nocbs=all'), you synthesize a chemically isolated environment where background kernel housekeeping is shoved onto dedicated threads. This prevents latency spikes on cores actively engaged in feeding draw calls to the NVIDIA graphics pipeline."
+  },
+  {
+    "id": "threadirqs",
+    "name": "threadirqs",
+    "category": "Processor & Scheduling",
+    "relevance": { "hybrid": 50, "dgpu": 80 },
+    "switches": "(Standalone flag)",
+    "verboseDescription": "A massive structural alteration to the kernel's chemical makeup. This parameter forces all hardware interrupt handlers to operate as schedulable kernel threads. Instead of hardware interrupts violently preempting whatever the CPU is doing, they become managed chemical processes. This drastically improves the real-time responsiveness of audio buffers and USB peripherals (like mice) at the cost of slight overall CPU throughput overhead."
+  },
+  {
+    "id": "preempt-full",
+    "name": "preempt=full",
+    "category": "Processor & Scheduling",
+    "relevance": { "hybrid": 50, "dgpu": 95 },
+    "switches": "=none, =voluntary, =full",
+    "verboseDescription": "Synthesizes maximum kernel preemption. In Fedora Rawhide, the kernel is typically configured for voluntary preemption. Forcing it to 'full' allows high-priority tasks (like KDE KWin Wayland compositor threads or explicit game loops) to ruthlessly and instantly preempt lower-priority kernel processes. This is a critical chemical catalyst for achieving absolute zero-latency frame pacing on the dGPU."
+  },
+  {
+    "id": "workqueue-power",
+    "name": "workqueue.power_efficient=Y",
+    "category": "Power & ACPI",
+    "relevance": { "hybrid": 95, "dgpu": 20 },
+    "switches": "=Y (Yes), =N (No)",
+    "verboseDescription": "A deep thermodynamic intervention. The kernel maintains unbound 'workqueues' for asynchronous tasks. By synthesizing the 'power_efficient=Y' chemical bond, the kernel is instructed to strictly bind these background tasks to CPU cores that are already awake and actively processing, rather than waking up sleeping cores. This significantly reduces thermal output and preserves battery life when operating in the Intel Hybrid matrix."
+  },
+  {
+    "id": "audit-disable",
+    "name": "audit=0",
+    "category": "System Core & Security",
+    "relevance": { "hybrid": 85, "dgpu": 85 },
+    "switches": "=0 (Disabled), =1 (Enabled)",
+    "verboseDescription": "The kernel audit daemon is a massive, highly verbose security chemical that logs thousands of syscall events per second in Fedora. By injecting 'audit=0', you completely neutralize the audit subsystem before the initial ramdisk even loads. This dramatically reduces NVMe I/O thrashing and CPU overhead, creating a much leaner, high-performance base state for Rawhide development and gaming."
+  },
+  {
+    "id": "random-trust-cpu",
+    "name": "random.trust_cpu=on",
+    "category": "System Core & Security",
+    "relevance": { "hybrid": 90, "dgpu": 90 },
+    "switches": "=on, =off",
+    "verboseDescription": "Cryptographic entropy generation can chemically block the boot process until enough 'randomness' is gathered from hardware timing variations. Injecting 'trust_cpu=on' commands the kernel to unconditionally trust the Intel CPU's internal hardware random number generator (RDRAND instruction set). This synthesizes an immediate, infinite pool of entropy, shaving highly measurable seconds off the Fedora 43 boot time."
+  },
+  {
+    "id": "pcie-port-pm",
+    "name": "pcie_port_pm=off",
+    "category": "Peripheral & I/O",
+    "relevance": { "hybrid": 60, "dgpu": 80 },
+    "switches": "=off, =force",
+    "verboseDescription": "ASUS motherboards aggressively power-manage internal PCIe ports, specifically those routing to Wi-Fi/Bluetooth cards and SD card readers. This can chemically induce connection dropouts. By forcefully disabling PCIe Port Power Management globally, you ensure constant, unyielding voltage to all interconnected bus lanes. This trades thermal efficiency for absolute, ironclad peripheral stability."
+  },
+  {
+    "id": "slab-nomerge",
+    "name": "slab_nomerge",
+    "category": "Memory & Hardware Isolation",
+    "relevance": { "hybrid": 50, "dgpu": 50 },
+    "switches": "(Standalone flag)",
+    "verboseDescription": "A highly advanced security/debugging chemical for the kernel heap. Normally, the Linux SLUB allocator merges memory caches of the same size to save space. Injecting this parameter violently segregates all memory caches. While it slightly increases the overhead on your 16GB DDR5 memory pool, it mathematically annihilates an entire class of chemical buffer-overflow heap-exploitation attacks, vital for testing bleeding-edge Rawhide network protocols."
+  },
+  {
+    "id": "page-poison",
+    "name": "page_poison=1",
+    "category": "Diagnostics & Verbosity",
+    "relevance": { "hybrid": 20, "dgpu": 20 },
+    "switches": "=1 (Enabled), =0 (Disabled)",
+    "verboseDescription": "An extreme memory matrix stress test. When a process frees memory, the data chemically remains in the DDR5 lattice until overwritten. Injecting 'page_poison=1' forces the kernel to instantly overwrite all newly freed memory pages with a specific, toxic byte pattern (usually 0xAA or 0x55). This violently exposes use-after-free bugs in experimental Rawhide drivers by forcing immediate kernel panics when accessed."
+  },
+  {
+    "id": "slub-debug",
+    "name": "slub_debug=FZP",
+    "category": "Diagnostics & Verbosity",
+    "relevance": { "hybrid": 30, "dgpu": 30 },
+    "switches": "=FZP, =U, =O (Multiple diagnostic flags)",
+    "verboseDescription": "The ultimate diagnostic chemical for memory allocation. By passing 'FZP' (Sanity Checks, Redzoning, and Poisoning), the kernel wraps every single internal memory allocation in a protective debugging matrix. It mathematically tracks exactly where every byte of your 16GB DDR5 is going. It causes a massive performance degradation but is the only way to synthetically trace catastrophic memory leaks inside proprietary NVIDIA kernel modules."
+  },
+  {
+    "id": "initcall-debug",
+    "name": "initcall_debug",
+    "category": "Diagnostics & Verbosity",
+    "relevance": { "hybrid": 60, "dgpu": 60 },
+    "switches": "(Standalone flag)",
+    "verboseDescription": "A highly verbose profiling tool. When injected, the kernel chemically logs the exact microsecond timestamp before and after the initialization of every single built-in module and ACPI sequence. If the ASUS BIOS v340 is causing a 10-second chemical hang during the execution of a specific driver (like the sound card or WMI bridge), this parameter outputs the exact mathematical proof into the dmesg matrix."
+  },
+  {
+    "id": "loglevel-max",
+    "name": "loglevel=7",
+    "category": "Diagnostics & Verbosity",
+    "relevance": { "hybrid": 50, "dgpu": 50 },
+    "switches": "=[0-7] (0=Emerg, 7=Debug)",
+    "verboseDescription": "The chemical floodgates of system logs. Setting the loglevel to the maximum value of 7 (Debug) commands the kernel to violently spew every single piece of internal telemetry, warning, and debug matrix data directly to the active TTY. Combined with the removal of 'quiet', this turns the physical display of the ASUS F16 into a rapidly scrolling cascade of raw, unfiltered chemical system data during the boot sequence."
+  },
+  {
+    "id": "l1tf-off",
+    "name": "l1tf=off",
+    "category": "Processor & Security",
+    "relevance": { "hybrid": 75, "dgpu": 85 },
+    "switches": "=off, =full, =full,force",
+    "verboseDescription": "Specifically targets the L1 Terminal Fault (Foreshadow) vulnerability present in Intel silicon. By chemically neutralizing this mitigation, you restore direct, un-flushed access to the L1 CPU cache during context switches. While it exposes the hyperthreading matrix to side-channel attacks, it chemically restores a measurable percentage of raw IPC (Instructions Per Clock) throughput, highly beneficial for CPU-bound dGPU game emulation."
+  },
+  {
+    "id": "mds-off",
+    "name": "mds=off",
+    "category": "Processor & Security",
+    "relevance": { "hybrid": 75, "dgpu": 85 },
+    "switches": "=off, =full, =full,nosmt",
+    "verboseDescription": "Neutralizes the Microarchitectural Data Sampling (Zombieload) mitigations. Similar to l1tf, this prevents the kernel from chemically scrubbing internal CPU buffers (like store buffers and fill buffers) when transitioning between user-space and kernel-space. Disabling this matrix defense acts as a highly volatile catalyst for lowering system call latency on the Intel processor."
+  },
+  {
+    "id": "zram-devices",
+    "name": "zram.num_devices=1",
+    "category": "Memory & Hardware Isolation",
+    "relevance": { "hybrid": 80, "dgpu": 80 },
+    "switches": "=[integer]",
+    "verboseDescription": "A pre-requisite chemical binding for advanced compressed memory architectures. While zswap acts as a cache for a physical NVMe swapfile, injecting 'zram' creates a chemically isolated block device existing purely within your 16GB DDR5 lattice. Setting the device count to 1 explicitly initializes the matrix to allow systemd-zram-setup to dynamically allocate a high-speed, lz4-compressed swap drive directly in memory."
+  },
+  {
+    "id": "nouveau-modeset-0",
+    "name": "nouveau.modeset=0",
+    "category": "Graphics Subsystem",
+    "relevance": { "hybrid": 85, "dgpu": 100 },
+    "switches": "=0 (Disabled), =1 (Enabled)",
+    "verboseDescription": "A secondary, aggressive chemical blockade against the open-source nouveau driver. While blacklisting prevents the module from loading initially, injecting 'modeset=0' mathematically destroys its ability to interface with the Direct Rendering Manager even if chemically injected later by a rogue system process. This ensures absolute dominance of the proprietary NVIDIA driver over the display topology."
+  },
+  {
+    "id": "intel-iommu-igfx",
+    "name": "intel_iommu=igfx_off",
+    "category": "Memory & Hardware Isolation",
+    "relevance": { "hybrid": 20, "dgpu": 95 },
+    "switches": "=on, =off, =igfx_off",
+    "verboseDescription": "A hyper-specialized parameter for strict dGPU environments. While 'intel_iommu=on' is needed for overall hardware isolation, passing 'igfx_off' explicitly severs the Intel integrated graphics from the IOMMU translation matrix. Since the iGPU is not being used to render frames in a pure dGPU state, excluding it prevents the IOMMU subsystem from chemically wasting CPU cycles managing memory mappings for an idle graphics processor."
+  },
+  {
+    "id": "kvm-ignore-msrs",
+    "name": "kvm.ignore_msrs=1",
+    "category": "System Core & Security",
+    "relevance": { "hybrid": 80, "dgpu": 80 },
+    "switches": "=1 (Enabled), =0 (Disabled)",
+    "verboseDescription": "Critical for running synthetic virtual environments (like Windows VMs via QEMU/KVM) on Fedora Rawhide. Windows often attempts to read or write to undocumented Model-Specific Registers (MSRs) on the Intel CPU. By default, KVM chemically rejects these, causing the VM to panic. Injecting this parameter forces KVM to silently ignore the requests, chemically stabilizing the virtualized guest operating system."
+  },
+  {
+    "id": "processor-ignore-ppc",
+    "name": "processor.ignore_ppc=1",
+    "category": "Power & ACPI",
+    "relevance": { "hybrid": 40, "dgpu": 95 },
+    "switches": "=1 (Enabled), =0 (Disabled)",
+    "verboseDescription": "A highly volatile, extremely aggressive thermal override. The ASUS BIOS v340 ACPI tables dictate strict Performance Present Capabilities (PPC) to limit the Intel CPU's maximum frequency when thermal limits are approaching. Injecting this chemical parameter commands the Linux kernel to violently ignore the BIOS's thermal throttling requests. This unlocks maximum synthetic frequency scaling, transferring all thermal responsibility to the hardware's internal catastrophic trip points."
+  },
+  {
+    "id": "idle-nomwait",
+    "name": "idle=nomwait",
+    "category": "Processor & Scheduling",
+    "relevance": { "hybrid": 50, "dgpu": 85 },
+    "switches": "=poll, =halt, =nomwait",
+    "verboseDescription": "Alters the fundamental chemical mechanism the CPU uses to enter idle states. By default, Intel processors use the 'mwait' instruction, which is highly efficient but can have specific latency wake-up penalties. Forcing 'nomwait' makes the kernel synthesize older, slightly less power-efficient idle instructions (like 'halt'). This serves as an obscure chemical stabilizer if 'mwait' causes micro-stutters when waking the CPU to feed the NVIDIA data bus."
+  },
+  {
+    "id": "intel-idle-cstate",
+    "name": "intel_idle.max_cstate=1",
+    "category": "Power & PCIe Bus",
+    "relevance": { "hybrid": 10, "dgpu": 100 },
+    "switches": "=[0-9] (0=Disable, 1=C1 only, etc)",
+    "verboseDescription": "The absolute decimation of CPU power saving. While 'processor.max_cstate' affects ACPI logic, this chemically attacks the specific 'intel_idle' driver. Setting it to 1 restricts the CPU from entering anything deeper than the C1 sleep state. The CPU cores never chemically shut down; they remain infinitely energized and instantly ready to synthesize data. This is the ultimate, battery-destroying catalyst for absolutely flawless frame generation on the ASUS F16."
+  },
+  {
+    "id": "button-lid-init",
+    "name": "button.lid_init_state=open",
+    "category": "ASUS Firmware/ACPI",
+    "relevance": { "hybrid": 75, "dgpu": 75 },
+    "switches": "=open, =closed, =ignore",
+    "verboseDescription": "A synthetic bridge over a common ASUS embedded controller flaw. Occasionally, upon booting, the firmware chemically misreports the laptop lid as 'closed', causing the systemd logind service to instantly synthesize a sleep command, creating an infinite sleep-wake loop. Forcing 'open' permanently overrides the initial ACPI polling, ensuring the kernel chemically assumes the display matrix is active and exposed until the first physical hardware interrupt is triggered by the hinge."
+  },
+  {
+    "id": "i8042-dumbkbd",
+    "name": "i8042.dumbkbd=1",
+    "category": "Peripheral & I/O",
+    "relevance": { "hybrid": 65, "dgpu": 65 },
+    "switches": "=1 (Enabled), =0 (Disabled)",
+    "verboseDescription": "An archaic but sometimes chemically necessary parameter for the TUF series keyboards. If the advanced ASUS keyboard backlighting or N-key rollover matrix conflicts with the standard Linux PS/2 driver initialization, keys may repeat infinitely or fail to register. Injecting 'dumbkbd' violently strips away all advanced hardware interrogation during boot, forcing the kernel to treat the highly advanced F16 keyboard as a mathematically primitive generic input device until the userspace USB daemon takes control."
+  },
+  {
+    "id": "nvidia-powermizer",
+    "name": "nvidia.NVreg_RegistryDwords=\"PowerMizerEnable=0x1; PerfLevelSrc=0x2222; PowerMizerDefault=0x1; PowerMizerDefaultAC=0x1\"",
+    "category": "Graphics Subsystem",
+    "relevance": { "hybrid": 10, "dgpu": 100 },
+    "switches": "(Hexadecimal Registry Strings)",
+    "verboseDescription": "A highly volatile chemical registry override for the proprietary NVIDIA matrix. This massive hexadecimal string violently locks the Turing/Ampere/Ada core into its maximum performance P-state (P0). It mathematically ignores all thermal and power-saving directives from the ASUS embedded controller, chemically forcing the dGPU to consume maximum voltage and maintain peak clock speeds perpetually for absolute zero-latency frame synthesis."
+  },
+  {
+    "id": "swiotlb",
+    "name": "swiotlb=65536",
+    "category": "Memory & Hardware Isolation",
+    "relevance": { "hybrid": 80, "dgpu": 95 },
+    "switches": "=[integer] (Number of I/O slabs)",
+    "verboseDescription": "Software Input Output Translation Lookaside Buffer. With a 16GB DDR5 lattice and a high-bandwidth NVIDIA dGPU, device drivers performing direct memory access (DMA) can chemically fracture when addressing memory above the 4GB boundary. Injecting 65536 mathematically expands the SWIOTLB bounce buffer matrix to a colossal size. This synthesizes an unbreakable chemical bridge for immense data payloads traveling between the 25GB NVMe swap partition and the discrete graphics processor."
+  },
+  {
+    "id": "rd-luks-discard",
+    "name": "rd.luks.options=discard",
+    "category": "Storage Subsystem",
+    "relevance": { "hybrid": 90, "dgpu": 90 },
+    "switches": "=discard, =timeout",
+    "verboseDescription": "Extracted directly from advanced Fedora boot topologies. When your 25GB NVMe swap or BTRFS root is encapsulated within a LUKS cryptographic matrix, standard SSD TRIM commands are chemically blocked for security. Passing 'discard' to the early dracut initramfs forcefully punches physical holes in the encryption lattice, allowing the NAND controller to mathematically annihilate unused blocks, vastly accelerating I/O throughput at a microscopic cost to cryptographic deniability."
+  },
+  {
+    "id": "btrfs-rootflags",
+    "name": "rootflags=subvol=root",
+    "category": "Storage Subsystem",
+    "relevance": { "hybrid": 100, "dgpu": 100 },
+    "switches": "subvol=[name], compress=[zstd/lzo]",
+    "verboseDescription": "A structural BTRFS parameter chemically targeting your root storage matrix. Instead of mounting the entire volume flatly, this commands the kernel to surgically extract and mount a specific mathematical subvolume (labeled 'root'). This is the absolute foundation of Fedora's snapshot architecture, allowing you to synthesize and instantly rollback the entire Rawhide OS state if an experimental NVIDIA driver chemically destabilizes the environment."
+  },
+  {
+    "id": "pcie-aspm-policy",
+    "name": "pcie_aspm.policy=performance",
+    "category": "Power & PCIe Bus",
+    "relevance": { "hybrid": 40, "dgpu": 90 },
+    "switches": "=default, =performance, =powersave",
+    "verboseDescription": "While 'pcie_aspm=off' violently severs all Active State Power Management, this parameter is a more calculated chemical agent. It instructs the PCI subsystem to mathematically prioritize maximum throughput over power savings across the entire motherboard lattice. It forces the PCIe lanes connecting your NVIDIA dGPU and Gen4 NVMe drive into absolute maximum bandwidth configurations without completely neutralizing the underlying firmware specifications."
+  },
+  {
+    "id": "snd-hda-intel-power",
+    "name": "snd_hda_intel.power_save=0 snd_hda_intel.power_save_controller=N",
+    "category": "Peripheral & I/O",
+    "relevance": { "hybrid": 70, "dgpu": 85 },
+    "switches": "=0 (Disabled), =1 (Enabled), =N, =Y",
+    "verboseDescription": "Chemically annihilates the power-saving protocols for the Intel High Definition Audio matrix. When the ASUS FX607V audio codec enters a low-power state, waking it can induce a physical, audible 'pop' in headphones and a mathematical latency spike in the PipeWire servers. Forcing these variables to 0 violently energizes the audio capacitor lattice perpetually, guaranteeing instantaneous acoustic synthesis during heavy graphical loads."
+  },
+  {
+    "id": "panic-reboot",
+    "name": "panic=10 oops=panic",
+    "category": "Diagnostics & Verbosity",
+    "relevance": { "hybrid": 80, "dgpu": 80 },
+    "switches": "panic=[seconds]",
+    "verboseDescription": "The ultimate chemical fail-safe for bleeding-edge Fedora Rawhide development. A kernel 'oops' is a non-fatal anomaly, but injecting 'oops=panic' forces the kernel to mathematically interpret *any* deviation as a catastrophic failure, triggering an immediate lockdown. The 'panic=10' additive acts as an automated centrifuge, violently rebooting the ASUS motherboard exactly 10 seconds after the crash, ensuring your system doesn't chemically bake itself in a deadlocked state."
+  },
+  {
+    "id": "intel-pstate-no-hwp",
+    "name": "intel_pstate=no_hwp",
+    "category": "Processor & Scheduling",
+    "relevance": { "hybrid": 50, "dgpu": 85 },
+    "switches": "(Standalone flag)",
+    "verboseDescription": "Intel Hardware P-States (HWP) allow the CPU to internally and autonomously synthesize its own clock speeds, ignoring the OS. In a highly volatile dGPU override state, you may want the Linux kernel's CPU scheduler to maintain absolute chemical dominance. Injecting 'no_hwp' severs the autonomous silicon logic, violently dragging frequency scaling control back to the Fedora 43 kernel matrix for mathematically precise workload tuning."
+  },
+  {
+    "id": "earlyprintk-efi",
+    "name": "earlyprintk=efi,keep",
+    "category": "Diagnostics & Verbosity",
+    "relevance": { "hybrid": 75, "dgpu": 75 },
+    "switches": "=vga, =efi, =serial",
+    "verboseDescription": "An extreme diagnostic isotope. If the Rawhide kernel chemically locks up before the Direct Rendering Manager (DRM) or standard TTY consoles initialize, the screen remains mathematically black. This parameter bypasses the standard display topology and writes raw chemical initialization strings directly into the UEFI framebuffer allocated by the ASUS v340 BIOS, preserving the panic text visually on the panel for forensic analysis."
+  },
+  {
+    "id": "nvme-noacpi",
+    "name": "nvme.noacpi=1",
+    "category": "Storage Subsystem",
+    "relevance": { "hybrid": 50, "dgpu": 80 },
+    "switches": "=1 (Enabled), =0 (Disabled)",
+    "verboseDescription": "Violently severs the communication bridge between the PCIe NVMe controller and the ASUS Advanced Configuration and Power Interface (ACPI) tables. If the v340 BIOS contains faulty thermal or power reporting for your 25GB swap drive, it can chemically induce a storage lockup. This parameter forces the Linux kernel to query the NVMe NAND flash mathematically directly, bypassing the manufacturer's firmware matrix entirely."
+  },
+  {
+    "id": "pci-noaer",
+    "name": "pci=noaer",
+    "category": "Peripheral & I/O",
+    "relevance": { "hybrid": 30, "dgpu": 85 },
+    "switches": "(Standalone flag)",
+    "verboseDescription": "Disables Advanced Error Reporting (AER) on the PCI Express bus. During massive data synthesis between the 16GB DDR5 memory pool and the NVIDIA dGPU, non-fatal PCIe bus errors can flood the dmesg log matrix, chemically consuming CPU cycles simply to report microscopic voltage fluctuations. Disabling AER mathematically silences this telemetry, sacrificing hardware diagnostics for absolute raw throughput and reduced interrupt latency."
+  },
+  {
+    "id": "ipv6-disable",
+    "name": "ipv6.disable=1",
+    "category": "System Core & Security",
+    "relevance": { "hybrid": 70, "dgpu": 70 },
+    "switches": "=1 (Disabled), =0 (Enabled)",
+    "verboseDescription": "Mathematically annihilates the entire IPv6 networking matrix from the kernel space. If your development environment relies strictly on IPv4 topologies, the IPv6 stack is a massive, highly verbose chemical process consuming RAM and CPU cycles in the background. Injecting this parameter prevents the network centrifuge from even binding the IPv6 modules, streamlining the entire transmission control protocol."
+  },
+  {
+    "id": "vsyscall-none",
+    "name": "vsyscall=none",
+    "category": "Processor & Security",
+    "relevance": { "hybrid": 85, "dgpu": 85 },
+    "switches": "=none, =emulate, =native",
+    "verboseDescription": "A targeted chemical strike against legacy x86 architecture. Virtual System Calls (vsyscall) map a static memory page to accelerate time-of-day queries, but this statically predictable matrix is a known vector for Return-Oriented Programming (ROP) exploits. By violently neutralizing it to 'none', you force the 16GB DDR5 lattice to utilize modernized, dynamically randomized vDSO pages, significantly hardening the Rawhide OS against memory-based attacks."
+  },
+  {
+    "id": "cgroup-disable-memory",
+    "name": "cgroup_disable=memory",
+    "category": "Memory & Hardware Isolation",
+    "relevance": { "hybrid": 40, "dgpu": 80 },
+    "switches": "=memory,cpu,io",
+    "verboseDescription": "Disables the memory controller within the Linux Control Groups (cgroups) centrifuge. While cgroups are mathematically required for systemd, disabling the *memory* specific tracking chemical slightly reduces the overhead of page-fault accounting. For a monolithic gaming or compilation state on the ASUS F16, this frees up a microscopic but measurable amount of CPU bandwidth across all 16GB of DDR5."
+  },
+  {
+    "id": "nohz-full",
+    "name": "nohz_full=1-15",
+    "category": "Processor & Scheduling",
+    "relevance": { "hybrid": 20, "dgpu": 95 },
+    "switches": "=[core list]",
+    "verboseDescription": "Synthesizes a completely tickless kernel matrix for specified CPU cores. Standard Linux scheduling sends hundreds of chemical timer interrupts (ticks) per second to every core. By designating cores 1 through 15 as 'nohz_full', you mathematically isolate them. When running a massive dGPU-bound application, the kernel entirely stops interrupting those cores, allowing 100% pure, unadulterated chemical focus on the workload."
+  },
+  {
+    "id": "isolcpus",
+    "name": "isolcpus=1-15",
+    "category": "Processor & Scheduling",
+    "relevance": { "hybrid": 10, "dgpu": 95 },
+    "switches": "=[core list]",
+    "verboseDescription": "The most violent form of core isolation. When chemically combined with 'nohz_full', this parameter rips CPU cores entirely out of the standard Linux scheduler matrix. The OS will mathematically refuse to place any background processes on these cores. You must surgically bind your target applications to these cores using 'taskset', creating an absolutely pristine, zero-latency execution environment for extreme dGPU synchronization."
+  },
+  {
+    "id": "usb-buffer",
+    "name": "usbcore.usbfs_memory_mb=1000",
+    "category": "Peripheral & I/O",
+    "relevance": { "hybrid": 80, "dgpu": 80 },
+    "switches": "=[integer] (Megabytes)",
+    "verboseDescription": "Massively expands the chemical buffer limit for USB device memory. By default, the Linux kernel restricts the amount of DDR5 memory a USB device can aggressively request. If you are plugging high-bandwidth peripherals or uncompressed capture cards into the ASUS F16's ports, the default limit will chemically bottleneck the stream. This parameter violently expands the memory lattice to 1000MB, ensuring flawless, uninterrupted I/O throughput."
+  },
+  {
+    "id": "random-trust-bootloader",
+    "name": "random.trust_bootloader=on",
+    "category": "System Core & Security",
+    "relevance": { "hybrid": 90, "dgpu": 90 },
+    "switches": "=on, =off",
+    "verboseDescription": "Chemically forces the Rawhide kernel to immediately trust the cryptographic entropy seeds passed down from the GRUB bootloader and the ASUS v340 UEFI matrix. It mathematically jumpstarts the kernel's internal random number generator pool, preventing the systemd initialization phase from chemically hanging while waiting for atmospheric noise or disk I/O entropy to reach the necessary threshold."
+  },
+  {
+    "id": "apparmor-disable",
+    "name": "apparmor=0 lsm=bpf,yama",
+    "category": "System Core & Security",
+    "relevance": { "hybrid": 60, "dgpu": 60 },
+    "switches": "apparmor=0, lsm=[list]",
+    "verboseDescription": "Violently strips away the AppArmor Mandatory Access Control (MAC) matrix. Fedora typically utilizes SELinux, but if AppArmor profiles leak into the Rawhide chemical mix via third-party packages, they can catastrophically block proprietary NVIDIA daemon execution. This injection zeroes out AppArmor and forcefully redefines the Linux Security Module (LSM) topology to only include basic process tracing (yama) and eBPF capabilities."
+  },
+  {
+    "id": "i915-force-probe",
+    "name": "i915.force_probe=*",
+    "category": "Graphics Subsystem",
+    "relevance": { "hybrid": 100, "dgpu": 10 },
+    "switches": "=[PCI ID], =*",
+    "verboseDescription": "A highly experimental chemical bridge for the Intel iGPU. If you are running an incredibly new, bleeding-edge Rawhide kernel that mathematically doesn't officially recognize the exact stepping of the Intel silicon inside your ASUS FX607V, the i915 driver will refuse to bind. Passing the wildcard asterisk chemically forces the driver to ignore its internal safeguard matrix and violently attempt initialization regardless of the hardware ID."
+  }
+]
