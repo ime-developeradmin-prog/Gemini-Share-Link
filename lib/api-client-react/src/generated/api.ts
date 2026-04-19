@@ -13,7 +13,14 @@ import type {
   UseQueryResult,
 } from "@tanstack/react-query";
 
-import type { HealthStatus } from "./api.schemas";
+import type {
+  BootParameter,
+  Category,
+  ErrorResponse,
+  HealthStatus,
+  ListParametersParams,
+  Stats,
+} from "./api.schemas";
 
 import { customFetch } from "../custom-fetch";
 import type { ErrorType } from "../custom-fetch";
@@ -92,6 +99,328 @@ export function useHealthCheck<
   request?: SecondParameter<typeof customFetch>;
 }): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
   const queryOptions = getHealthCheckQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * Returns all boot parameters, optionally filtered
+ * @summary List boot parameters
+ */
+export const getListParametersUrl = (params?: ListParametersParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/parameters?${stringifiedParams}`
+    : `/api/parameters`;
+};
+
+export const listParameters = async (
+  params?: ListParametersParams,
+  options?: RequestInit,
+): Promise<BootParameter[]> => {
+  return customFetch<BootParameter[]>(getListParametersUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListParametersQueryKey = (params?: ListParametersParams) => {
+  return [`/api/parameters`, ...(params ? [params] : [])] as const;
+};
+
+export const getListParametersQueryOptions = <
+  TData = Awaited<ReturnType<typeof listParameters>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: ListParametersParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listParameters>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListParametersQueryKey(params);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listParameters>>> = ({
+    signal,
+  }) => listParameters(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listParameters>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListParametersQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listParameters>>
+>;
+export type ListParametersQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List boot parameters
+ */
+
+export function useListParameters<
+  TData = Awaited<ReturnType<typeof listParameters>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: ListParametersParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listParameters>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListParametersQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Get a single boot parameter
+ */
+export const getGetParameterUrl = (id: string) => {
+  return `/api/parameters/${id}`;
+};
+
+export const getParameter = async (
+  id: string,
+  options?: RequestInit,
+): Promise<BootParameter> => {
+  return customFetch<BootParameter>(getGetParameterUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetParameterQueryKey = (id: string) => {
+  return [`/api/parameters/${id}`] as const;
+};
+
+export const getGetParameterQueryOptions = <
+  TData = Awaited<ReturnType<typeof getParameter>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  id: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getParameter>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetParameterQueryKey(id);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getParameter>>> = ({
+    signal,
+  }) => getParameter(id, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getParameter>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetParameterQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getParameter>>
+>;
+export type GetParameterQueryError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Get a single boot parameter
+ */
+
+export function useGetParameter<
+  TData = Awaited<ReturnType<typeof getParameter>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  id: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getParameter>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetParameterQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary List all parameter categories
+ */
+export const getListCategoriesUrl = () => {
+  return `/api/categories`;
+};
+
+export const listCategories = async (
+  options?: RequestInit,
+): Promise<Category[]> => {
+  return customFetch<Category[]>(getListCategoriesUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListCategoriesQueryKey = () => {
+  return [`/api/categories`] as const;
+};
+
+export const getListCategoriesQueryOptions = <
+  TData = Awaited<ReturnType<typeof listCategories>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listCategories>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListCategoriesQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listCategories>>> = ({
+    signal,
+  }) => listCategories({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listCategories>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListCategoriesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listCategories>>
+>;
+export type ListCategoriesQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List all parameter categories
+ */
+
+export function useListCategories<
+  TData = Awaited<ReturnType<typeof listCategories>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listCategories>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListCategoriesQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Get aggregate statistics
+ */
+export const getGetStatsUrl = () => {
+  return `/api/stats`;
+};
+
+export const getStats = async (options?: RequestInit): Promise<Stats> => {
+  return customFetch<Stats>(getGetStatsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetStatsQueryKey = () => {
+  return [`/api/stats`] as const;
+};
+
+export const getGetStatsQueryOptions = <
+  TData = Awaited<ReturnType<typeof getStats>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<Awaited<ReturnType<typeof getStats>>, TError, TData>;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetStatsQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getStats>>> = ({
+    signal,
+  }) => getStats({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getStats>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetStatsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getStats>>
+>;
+export type GetStatsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get aggregate statistics
+ */
+
+export function useGetStats<
+  TData = Awaited<ReturnType<typeof getStats>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<Awaited<ReturnType<typeof getStats>>, TError, TData>;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetStatsQueryOptions(options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
     queryKey: QueryKey;

@@ -6,4 +6,15 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from "./bootParameter";
+export * from "./bootParameterRiskLevel";
+export * from "./category";
+export * from "./errorResponse";
 export * from "./healthStatus";
+export * from "./listParametersGraphicsMode";
+export * from "./listParametersParams";
+export * from "./stats";
+export * from "./statsCategoryCountsItem";
+export * from "./statsRiskCounts";
+export * from "./statsTopDgpuParamsItem";
+export * from "./statsTopHybridParamsItem";

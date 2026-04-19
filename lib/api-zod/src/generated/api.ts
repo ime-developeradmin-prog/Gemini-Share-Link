@@ -14,3 +14,92 @@ import * as zod from "zod";
 export const HealthCheckResponse = zod.object({
   status: zod.string(),
 });
+
+/**
+ * Returns all boot parameters, optionally filtered
+ * @summary List boot parameters
+ */
+export const ListParametersQueryParams = zod.object({
+  category: zod.coerce.string().optional(),
+  graphicsMode: zod.enum(["hybrid", "dgpu"]).optional(),
+  search: zod.coerce.string().optional(),
+  riskLevel: zod.coerce.string().optional(),
+});
+
+export const ListParametersResponseItem = zod.object({
+  id: zod.string(),
+  name: zod.string(),
+  category: zod.string(),
+  relevanceHybrid: zod.number(),
+  relevanceDgpu: zod.number(),
+  switches: zod.string(),
+  verboseDescription: zod.string(),
+  recommendedValue: zod.string(),
+  positionalParams: zod.string().nullish(),
+  riskLevel: zod.enum(["safe", "moderate", "advanced"]),
+  tags: zod.array(zod.string()),
+});
+export const ListParametersResponse = zod.array(ListParametersResponseItem);
+
+/**
+ * @summary Get a single boot parameter
+ */
+export const GetParameterParams = zod.object({
+  id: zod.coerce.string(),
+});
+
+export const GetParameterResponse = zod.object({
+  id: zod.string(),
+  name: zod.string(),
+  category: zod.string(),
+  relevanceHybrid: zod.number(),
+  relevanceDgpu: zod.number(),
+  switches: zod.string(),
+  verboseDescription: zod.string(),
+  recommendedValue: zod.string(),
+  positionalParams: zod.string().nullish(),
+  riskLevel: zod.enum(["safe", "moderate", "advanced"]),
+  tags: zod.array(zod.string()),
+});
+
+/**
+ * @summary List all parameter categories
+ */
+export const ListCategoriesResponseItem = zod.object({
+  name: zod.string(),
+  count: zod.number(),
+  description: zod.string(),
+});
+export const ListCategoriesResponse = zod.array(ListCategoriesResponseItem);
+
+/**
+ * @summary Get aggregate statistics
+ */
+export const GetStatsResponse = zod.object({
+  totalParameters: zod.number(),
+  categoryCounts: zod.array(
+    zod.object({
+      category: zod.string(),
+      count: zod.number(),
+    }),
+  ),
+  riskCounts: zod.object({
+    safe: zod.number(),
+    moderate: zod.number(),
+    advanced: zod.number(),
+  }),
+  topHybridParams: zod.array(
+    zod.object({
+      id: zod.string(),
+      name: zod.string(),
+      relevanceHybrid: zod.number(),
+    }),
+  ),
+  topDgpuParams: zod.array(
+    zod.object({
+      id: zod.string(),
+      name: zod.string(),
+      relevanceDgpu: zod.number(),
+    }),
+  ),
+});

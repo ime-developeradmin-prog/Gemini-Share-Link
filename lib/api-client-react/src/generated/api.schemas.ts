@@ -8,3 +8,83 @@
 export interface HealthStatus {
   status: string;
 }
+
+export type BootParameterRiskLevel =
+  (typeof BootParameterRiskLevel)[keyof typeof BootParameterRiskLevel];
+
+export const BootParameterRiskLevel = {
+  safe: "safe",
+  moderate: "moderate",
+  advanced: "advanced",
+} as const;
+
+export interface BootParameter {
+  id: string;
+  name: string;
+  category: string;
+  relevanceHybrid: number;
+  relevanceDgpu: number;
+  switches: string;
+  verboseDescription: string;
+  recommendedValue: string;
+  /** @nullable */
+  positionalParams?: string | null;
+  riskLevel: BootParameterRiskLevel;
+  tags: string[];
+}
+
+export interface Category {
+  name: string;
+  count: number;
+  description: string;
+}
+
+export type StatsCategoryCountsItem = {
+  category: string;
+  count: number;
+};
+
+export type StatsRiskCounts = {
+  safe: number;
+  moderate: number;
+  advanced: number;
+};
+
+export type StatsTopHybridParamsItem = {
+  id: string;
+  name: string;
+  relevanceHybrid: number;
+};
+
+export type StatsTopDgpuParamsItem = {
+  id: string;
+  name: string;
+  relevanceDgpu: number;
+};
+
+export interface Stats {
+  totalParameters: number;
+  categoryCounts: StatsCategoryCountsItem[];
+  riskCounts: StatsRiskCounts;
+  topHybridParams: StatsTopHybridParamsItem[];
+  topDgpuParams: StatsTopDgpuParamsItem[];
+}
+
+export interface ErrorResponse {
+  error: string;
+}
+
+export type ListParametersParams = {
+  category?: string;
+  graphicsMode?: ListParametersGraphicsMode;
+  search?: string;
+  riskLevel?: string;
+};
+
+export type ListParametersGraphicsMode =
+  (typeof ListParametersGraphicsMode)[keyof typeof ListParametersGraphicsMode];
+
+export const ListParametersGraphicsMode = {
+  hybrid: "hybrid",
+  dgpu: "dgpu",
+} as const;
